@@ -1,0 +1,26 @@
+name: Build VideoLocker C++
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Compile
+        shell: cmd
+        run: |
+          cl /EHsc /O2 /utf-8 videolocker.cpp /link strmiids.lib ole32.lib oleaut32.lib uuid.lib advapi32.lib user32.lib gdi32.lib shell32.lib wbemuuid.lib /OUT:videolocker.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: videolocker-exe
+          path: videolocker.exe
