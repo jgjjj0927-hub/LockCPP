@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <ole2.h>
 #include <oleauto.h>
+#include <comdef.h>
 #include <dshow.h>
 #include <wbemidl.h>
 #include <tlhelp32.h>
@@ -85,7 +86,9 @@ static void RunHidden(const std::wstring& cmd) {
     si.wShowWindow = SW_HIDE;
     PROCESS_INFORMATION pi{};
     std::wstring c = cmd;
-    if (CreateProcessW(nullptr, c.data(), nullptr, nullptr, FALSE,
+    // &c[0] гарантированно даёт wchar_t* (буфер непустой, т.к. cmd непустой)
+    if (!c.empty() &&
+        CreateProcessW(nullptr, &c[0], nullptr, nullptr, FALSE,
                        CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
         WaitForSingleObject(pi.hProcess, 15000);
         CloseHandle(pi.hProcess);
@@ -357,13 +360,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     }
     case WM_APP + 1: {
         if (g_player) {
-            long ev = 0, p1 = 0, p2 = 0;
+            long evCode = 0;
+            LONG_PTR p1 = 0, p2 = 0;
             while (g_player->events &&
-                   g_player->events->GetEvent(&ev, &p1, &p2, 0) == S_OK) {
-                if (ev == EC_COMPLETE) {
+                   g_player->events->GetEvent(&evCode, &p1, &p2, 0) == S_OK) {
+                if (evCode == EC_COMPLETE) {
                     g_player->NextAndPlay();
                 }
-                g_player->events->FreeEventParams(ev, p1, p2);
+                g_player->events->FreeEventParams(evCode, p1, p2);
             }
         }
         return 0;
